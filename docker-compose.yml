@@ -1,0 +1,50 @@
+services:
+  jwt_auth_db:
+    platform: linux/arm64
+    image: postgres:latest
+    container_name: jwt_auth_db
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=password
+    ports:
+      - "5433:5432"
+    networks:
+      - jwt_auth_network
+
+  jwt_auth_pgadmin:
+    platform: linux/arm64
+    image: dpage/pgadmin4
+    container_name: jwt_auth_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+    ports:
+      - "8081:80"
+    depends_on:
+      - jwt_auth_db
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - jwt_auth_network
+
+  jwt_auth_web:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: jwt_auth_web
+    platform: linux/arm64
+    image: jwt_auth_web:0.1
+    command: bash -c "bundle exec rake db:create && bundle exec rake db:migrate && ./bin/rails server -b 0.0.0.0 -p 3000"
+    ports:
+      - "3000:3000"
+    networks:
+      - jwt_auth_network
+    volumes:
+      - ./:/rails
+
+volumes:
+  pgadmin_data:
+
+networks:
+  jwt_auth_network:
+    external: true
